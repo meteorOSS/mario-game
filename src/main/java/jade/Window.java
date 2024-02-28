@@ -3,6 +3,7 @@ package jade;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
+import util.Time;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
@@ -17,8 +18,27 @@ public class Window {
     private static Window window;
     private long glfwWindow;
 
-    private float r,g,b,a;
+    public static float r,g,b,a;
 
+    private static Scene currentScene = null;
+
+    /**
+     * 更改场景
+     */
+    public static void changeScene(int newScene){
+        switch (newScene){
+            case 0:
+                currentScene = new LevelEditorScene();
+                break;
+            case 1:
+                currentScene = new LevelScene();
+                break;
+            default:
+                assert false : "未知场景: "+newScene;
+                break;
+
+        }
+    }
 
     private Window(){
         this.width = 1920;
@@ -103,12 +123,17 @@ public class Window {
 
         GL.createCapabilities(); //创建OpenGL的能力对象，基于当前的上下文
 
+        Window.changeScene(0);
 
     }
 
     private boolean fadeToBlack = false;
 
     private void loop(){
+
+        float beginTime = Time.getTime();
+        float endTime;
+        float dt = 0.0f;
         while (!glfwWindowShouldClose(this.glfwWindow)){
             // 拉取键盘，鼠标操作等事件
             glfwPollEvents();
@@ -116,20 +141,16 @@ public class Window {
             glClearColor(r,g,b,a);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            // 现在，按下空格会在黑色淡入和白色之间切换!
-            if(fadeToBlack){
-                r = Math.max(r - 0.01f,0);
-                g = Math.max(r - 0.01f,0);
-                b = Math.max(r - 0.01f,0);
-            }else {
-                r = g = b = 1;
-            }
+            if(dt>=0)
+                currentScene.update(dt);
 
-            if(KeyListener.isKeyPressed(GLFW_KEY_SPACE)){
-                fadeToBlack = !fadeToBlack;
-            }
+            // 现在，按下空格会在黑色淡入和白色之间切换!
 
             glfwSwapBuffers(this.glfwWindow); // 交换缓冲区
+
+            endTime = Time.getTime();
+            dt = endTime - beginTime; // 增量时间
+            beginTime = endTime;
         }
     }
 }
